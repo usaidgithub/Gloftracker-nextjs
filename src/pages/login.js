@@ -1,5 +1,6 @@
 import { useState,useEffect } from "react";
 import { useRouter } from "next/router";
+import Link from "next/link";
 
 // Matching the primary color used in the enhanced registration page
 const PRIMARY_COLOR = "indigo"; 
