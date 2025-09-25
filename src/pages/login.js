@@ -149,12 +149,12 @@ export default function Login() {
         {/* Footer Link: Matching registration link style */}
         <p className="text-sm text-center text-gray-500 mt-6">
           Don&apos;t have an account yet?{" "}
-          <a
+          <Link
             href="/register"
             className={`text-${PRIMARY_COLOR}-600 font-semibold hover:text-${PRIMARY_COLOR}-700 transition duration-150`}
           >
             Create one here
-          </a>
+          </Link>
         </p>
       </div>
     </div>
