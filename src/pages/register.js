@@ -1,8 +1,9 @@
-import { useState ,useEffect} from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
-// A richer, darker blue for primary actions and headings
-const PRIMARY_COLOR = "indigo"; // Using Tailwind's indigo color palette
+
+// Changing to the blue color used in the Home and Login pages
+const PRIMARY_COLOR_CLASS = "blue";
 
 export default function Register() {
   const router = useRouter();
@@ -14,20 +15,27 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-   useEffect(() => {
+
+  // State to manage whether the auth check is complete
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  useEffect(() => {
     const checkAuth = async () => {
       try {
-        const res = await fetch('/api/check-auth');
+        const res = await fetch("/api/check-auth");
         if (res.ok) {
-          router.push('/dashboard');
+          // User is already authenticated, redirect
+          router.push("/dashboard");
         }
       } catch (error) {
-        router.push('/login');
-        console.error('Error checking authentication:', error);
+        console.error("Error checking authentication:", error);
+      } finally {
+        setIsCheckingAuth(false);
       }
     };
     checkAuth();
   }, [router]);
+
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -43,7 +51,7 @@ export default function Register() {
 
     try {
       // NOTE: Replace with your actual API endpoint
-      const res = await fetch("/api/register", { 
+      const res = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -52,10 +60,12 @@ export default function Register() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.message || "Registration failed. Please try again.");
+        throw new Error(
+          data.message || "Registration failed. Please try again."
+        );
       }
 
-      setSuccess("Account created successfully! Redirecting...");
+      setSuccess("Account created successfully! Redirecting to login...");
       setTimeout(() => router.push("/login"), 2000);
     } catch (err) {
       setError(err.message);
@@ -64,36 +74,50 @@ export default function Register() {
     }
   };
 
+  // Show loading state while checking authentication
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
+        <p className="text-lg">Checking authentication status...</p>
+      </div>
+    );
+  }
+
   return (
-    // Background: Darker, more engaging gradient with a subtle texture feel
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
-      {/* Card Container: Slightly off-white background, larger shadow, rounded corners */}
-      <div className="w-full max-w-md bg-white p-10 border border-gray-200 rounded-xl shadow-2xl transition-all duration-300 hover:shadow-3xl">
-        
-        {/* Header: Stronger title color and slightly larger text */}
-        <h1 className="text-3xl font-extrabold text-center text-gray-800 mb-2 tracking-tight">
-          Welcome to <span className={`text-${PRIMARY_COLOR}-600`}>GlofTracker</span>
+    <div className="min-h-screen flex items-center justify-center bg-gray-900 px-4 py-12">
+      {/* Card Container */}
+      <div className="w-full max-w-md bg-gray-800 p-10 border border-gray-700 rounded-xl shadow-2xl transition-all duration-300 hover:shadow-3xl">
+        {/* Header */}
+        <h1 className="text-3xl font-extrabold text-center text-white mb-2 tracking-tight">
+          Welcome to{" "}
+          <span className={`text-${PRIMARY_COLOR_CLASS}-500`}>GlofTracker</span>
         </h1>
-        <p className="text-center text-gray-500 mb-8 text-lg">
+        <p className="text-center text-gray-400 mb-8 text-lg">
           Create your new account
         </p>
 
-        {/* Error/Success Messages: Clearer contrast with background */}
+        {/* Error/Success Messages */}
         {error && (
-          <p className="bg-red-100 text-red-700 p-3 rounded-lg text-sm mb-4 border border-red-200" role="alert">
+          <p
+            className="bg-red-900/40 text-red-400 p-3 rounded-lg text-sm mb-4 border border-red-800"
+            role="alert"
+          >
             🚨 {error}
           </p>
         )}
         {success && (
-          <p className="bg-green-100 text-green-700 p-3 rounded-lg text-sm mb-4 border border-green-200" role="alert">
+          <p
+            className="bg-green-900/40 text-green-400 p-3 rounded-lg text-sm mb-4 border border-green-800"
+            role="alert"
+          >
             ✅ {success}
           </p>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Input Group */}
+          {/* Full Name Input */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-300 mb-1">
               Full Name
             </label>
             <input
@@ -102,15 +126,14 @@ export default function Register() {
               value={formData.name}
               onChange={handleChange}
               required
-              // Input Styling: Better contrast border, deeper focus ring color
-              className={`w-full border-gray-300 border rounded-lg px-4 py-2.5 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-${PRIMARY_COLOR}-500 focus:border-${PRIMARY_COLOR}-500 outline-none transition duration-150 ease-in-out`}
+              className={`w-full border-gray-600 border bg-gray-700 text-white rounded-lg px-4 py-2.5 placeholder-gray-400 focus:ring-2 focus:ring-${PRIMARY_COLOR_CLASS}-500 focus:border-${PRIMARY_COLOR_CLASS}-500 outline-none transition duration-150 ease-in-out`}
               placeholder="Enter your full name"
             />
           </div>
 
-          {/* Input Group */}
+          {/* Email Input */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-300 mb-1">
               Email Address
             </label>
             <input
@@ -119,14 +142,14 @@ export default function Register() {
               value={formData.email}
               onChange={handleChange}
               required
-              className={`w-full border-gray-300 border rounded-lg px-4 py-2.5 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-${PRIMARY_COLOR}-500 focus:border-${PRIMARY_COLOR}-500 outline-none transition duration-150 ease-in-out`}
+              className={`w-full border-gray-600 border bg-gray-700 text-white rounded-lg px-4 py-2.5 placeholder-gray-400 focus:ring-2 focus:ring-${PRIMARY_COLOR_CLASS}-500 focus:border-${PRIMARY_COLOR_CLASS}-500 outline-none transition duration-150 ease-in-out`}
               placeholder="you@example.com"
             />
           </div>
 
-          {/* Input Group */}
+          {/* Password Input */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-300 mb-1">
               Password
             </label>
             <input
@@ -135,27 +158,27 @@ export default function Register() {
               value={formData.password}
               onChange={handleChange}
               required
-              className={`w-full border-gray-300 border rounded-lg px-4 py-2.5 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-${PRIMARY_COLOR}-500 focus:border-${PRIMARY_COLOR}-500 outline-none transition duration-150 ease-in-out`}
+              className={`w-full border-gray-600 border bg-gray-700 text-white rounded-lg px-4 py-2.5 placeholder-gray-400 focus:ring-2 focus:ring-${PRIMARY_COLOR_CLASS}-500 focus:border-${PRIMARY_COLOR_CLASS}-500 outline-none transition duration-150 ease-in-out`}
               placeholder="Enter strong password"
             />
           </div>
 
-          {/* Submit Button: Stronger, more appealing color and hover effect */}
+          {/* Submit Button */}
           <button
             type="submit"
             disabled={loading}
-            className={`w-full bg-${PRIMARY_COLOR}-600 text-black font-bold py-3 rounded-lg shadow-md hover:bg-${PRIMARY_COLOR}-700 transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.01]`}
+            className={`w-full bg-${PRIMARY_COLOR_CLASS}-600 text-white font-bold py-3 rounded-lg shadow-md hover:bg-${PRIMARY_COLOR_CLASS}-500 transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.01]`}
           >
             {loading ? "Creating Account..." : "Register Now"}
           </button>
         </form>
 
         {/* Footer Link */}
-        <p className="text-sm text-center text-gray-500 mt-6">
+        <p className="text-sm text-center text-gray-400 mt-6">
           Already have an account?{" "}
           <Link
             href="/login"
-            className={`text-${PRIMARY_COLOR}-600 font-semibold hover:text-${PRIMARY_COLOR}-700 transition duration-150`}
+            className={`text-${PRIMARY_COLOR_CLASS}-500 font-semibold hover:text-${PRIMARY_COLOR_CLASS}-400 transition duration-150`}
           >
             Log in here
           </Link>

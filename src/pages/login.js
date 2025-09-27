@@ -1,9 +1,9 @@
-import { useState,useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 
-// Matching the primary color used in the enhanced registration page
-const PRIMARY_COLOR = "indigo"; 
+// Changing to the blue color used in the Home page
+const PRIMARY_COLOR_CLASS = "blue";
 
 export default function Login() {
   const router = useRouter();
@@ -13,22 +13,29 @@ export default function Login() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  // Success state is often less needed for login, but kept for consistency if needed for messages
-  const [success, setSuccess] = useState(""); 
- useEffect(() => {
+  const [success, setSuccess] = useState("");
+
+  // AUTH CHECK: Use a client-side flag to prevent double redirect/flash
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  useEffect(() => {
     const checkAuth = async () => {
       try {
-        const res = await fetch('/api/check-auth');
+        const res = await fetch("/api/check-auth");
         if (res.ok) {
-          router.push('/dashboard');
+          // User is authenticated, redirect
+          router.push("/dashboard");
         }
       } catch (error) {
-        router.push('/login');
-        console.error('Error checking authentication:', error);
+        // User is not authenticated, stay on login
+        console.error("Error checking authentication:", error);
+      } finally {
+        setIsCheckingAuth(false); // Done checking, allow form render
       }
     };
     checkAuth();
   }, [router]);
+
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -44,7 +51,7 @@ export default function Login() {
 
     try {
       // NOTE: Replace with your actual API endpoint for login
-      const res = await fetch("/api/login", { 
+      const res = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -53,13 +60,14 @@ export default function Login() {
       const data = await res.json();
 
       if (!res.ok) {
-        // Use the error message from the backend, or a generic one
-        throw new Error(data.message || "Login failed. Please check your credentials.");
+        throw new Error(
+          data.message || "Login failed. Please check your credentials."
+        );
       }
 
       setSuccess("Login successful! Redirecting to dashboard...");
       // Redirect to the main application page upon success
-      setTimeout(() => router.push("/dashboard"), 2000); 
+      setTimeout(() => router.push("/dashboard"), 2000);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -67,37 +75,53 @@ export default function Login() {
     }
   };
 
+  // Optionally render a loading spinner while checking auth
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
+        <p className="text-lg">Checking authentication...</p>
+      </div>
+    );
+  }
+
   return (
-    // Background: Matching the subtle gray background
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
-      {/* Card Container: Matching elevated card styling */}
-      <div className="w-full max-w-md bg-white p-10 border border-gray-200 rounded-xl shadow-2xl transition-all duration-300 hover:shadow-3xl">
-        
-        {/* Header: Strong, consistent branding */}
-        <h1 className="text-3xl font-extrabold text-center text-gray-800 mb-2 tracking-tight">
-          Welcome Back to <span className={`text-${PRIMARY_COLOR}-600`}>GlofTracker</span>
+    // Background: Dark theme from Home page (bg-gray-900)
+    <div className="min-h-screen flex items-center justify-center bg-gray-900 px-4 py-12">
+      {/* Card Container */}
+      <div className="w-full max-w-md bg-gray-800 p-10 border border-gray-700 rounded-xl shadow-2xl transition-all duration-300 hover:shadow-3xl">
+        {/* Header */}
+        <h1 className="text-3xl font-extrabold text-center text-white mb-2 tracking-tight">
+          Welcome Back to{" "}
+          <span className={`text-${PRIMARY_COLOR_CLASS}-500`}>
+            GlofTracker
+          </span>
         </h1>
-        <p className="text-center text-gray-500 mb-8 text-lg">
+        <p className="text-center text-gray-400 mb-8 text-lg">
           Sign in to your account
         </p>
 
-        {/* Error/Success Messages: Matching the enhanced message blocks */}
+        {/* Error/Success Messages */}
         {error && (
-          <p className="bg-red-100 text-red-700 p-3 rounded-lg text-sm mb-4 border border-red-200" role="alert">
+          <p
+            className="bg-red-900/40 text-red-400 p-3 rounded-lg text-sm mb-4 border border-red-800"
+            role="alert"
+          >
             🚨 {error}
           </p>
         )}
         {success && (
-          <p className="bg-green-100 text-green-700 p-3 rounded-lg text-sm mb-4 border border-green-200" role="alert">
+          <p
+            className="bg-green-900/40 text-green-400 p-3 rounded-lg text-sm mb-4 border border-green-800"
+            role="alert"
+          >
             ✅ {success}
           </p>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-
-          {/* Email Input Group */}
+          {/* Email Input */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-300 mb-1">
               Email Address
             </label>
             <input
@@ -106,15 +130,14 @@ export default function Login() {
               value={formData.email}
               onChange={handleChange}
               required
-              // Input Styling: Matching enhanced input fields
-              className={`w-full border-gray-300 border rounded-lg px-4 py-2.5 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-${PRIMARY_COLOR}-500 focus:border-${PRIMARY_COLOR}-500 outline-none transition duration-150 ease-in-out`}
+              className={`w-full border-gray-600 border bg-gray-700 text-white rounded-lg px-4 py-2.5 placeholder-gray-400 focus:ring-2 focus:ring-${PRIMARY_COLOR_CLASS}-500 focus:border-${PRIMARY_COLOR_CLASS}-500 outline-none transition duration-150 ease-in-out`}
               placeholder="you@example.com"
             />
           </div>
 
-          {/* Password Input Group */}
+          {/* Password Input */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-300 mb-1">
               Password
             </label>
             <input
@@ -123,36 +146,37 @@ export default function Login() {
               value={formData.password}
               onChange={handleChange}
               required
-              // Input Styling: Matching enhanced input fields
-              className={`w-full border-gray-300 border rounded-lg px-4 py-2.5 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-${PRIMARY_COLOR}-500 focus:border-${PRIMARY_COLOR}-500 outline-none transition duration-150 ease-in-out`}
+              className={`w-full border-gray-600 border bg-gray-700 text-white rounded-lg px-4 py-2.5 placeholder-gray-400 focus:ring-2 focus:ring-${PRIMARY_COLOR_CLASS}-500 focus:border-${PRIMARY_COLOR_CLASS}-500 outline-none transition duration-150 ease-in-out`}
               placeholder="Your secure password"
             />
-            
-            {/* Optional: Forgot Password Link */}
+
+            {/* Forgot Password Link */}
             <div className="text-right mt-2">
-              <a href="/forgot-password" 
-                 className={`text-xs font-medium text-${PRIMARY_COLOR}-600 hover:text-${PRIMARY_COLOR}-700 transition`}>
+              <a
+                href="/forgot-password"
+                className={`text-xs font-medium text-${PRIMARY_COLOR_CLASS}-500 hover:text-${PRIMARY_COLOR_CLASS}-400 transition`}
+              >
                 Forgot Password?
               </a>
             </div>
           </div>
 
-          {/* Submit Button: Matching enhanced button styling */}
+          {/* Submit Button */}
           <button
             type="submit"
             disabled={loading}
-            className={`w-full bg-${PRIMARY_COLOR}-600 text-black font-bold py-3 rounded-lg shadow-md hover:bg-${PRIMARY_COLOR}-700 transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.01]`}
+            className={`w-full bg-${PRIMARY_COLOR_CLASS}-600 text-white font-bold py-3 rounded-lg shadow-md hover:bg-${PRIMARY_COLOR_CLASS}-500 transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.01]`}
           >
             {loading ? "Logging In..." : "Log In"}
           </button>
         </form>
 
-        {/* Footer Link: Matching registration link style */}
-        <p className="text-sm text-center text-gray-500 mt-6">
+        {/* Footer Link */}
+        <p className="text-sm text-center text-gray-400 mt-6">
           Don&apos;t have an account yet?{" "}
           <Link
             href="/register"
-            className={`text-${PRIMARY_COLOR}-600 font-semibold hover:text-${PRIMARY_COLOR}-700 transition duration-150`}
+            className={`text-${PRIMARY_COLOR_CLASS}-500 font-semibold hover:text-${PRIMARY_COLOR_CLASS}-400 transition duration-150`}
           >
             Create one here
           </Link>
