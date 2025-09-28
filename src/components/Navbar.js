@@ -240,13 +240,13 @@ const NavBar = () => {
 
             {/* Contact & About */}
             <div className="border-t border-border pt-2 space-y-1">
-              <Link href="/contact" onClick={handleLinkClick}>
+              <Link href="/dashboard" onClick={handleLinkClick}>
                 <Button variant="ghost" className="w-full justify-start space-x-2" size="sm">
                   <Mail className="h-4 w-4" />
                   <span>Contact Us</span>
                 </Button>
               </Link>
-              <Link href="/about" onClick={handleLinkClick}>
+              <Link href="/dashboard" onClick={handleLinkClick}>
                 <Button variant="ghost" className="w-full justify-start space-x-2" size="sm">
                   <Info className="h-4 w-4" />
                   <span>About Us</span>
