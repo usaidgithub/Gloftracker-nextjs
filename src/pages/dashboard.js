@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Navbar from "../components/Navbar"
+import EmergencyButton from "../components/EmergencyButton"
 import Link from "next/link";
 import {
   MapPin,
@@ -136,7 +137,7 @@ const Home = () => {
       title: "Emergency Services",
       description: "Direct access to disaster management and emergency contacts",
       icon: Phone,
-      href: "/emergency",
+      href: "/safety",
       color: "emergency",
     },
     {
@@ -406,7 +407,7 @@ const Home = () => {
               </Button>
             </Link>
             {/* 5. FIX: Modern Link API - wrap the custom component */}
-            <Link href="/emergency" className="w-full sm:w-auto">
+            <Link href="/safety" className="w-full sm:w-auto">
               <Button variant="emergency" size="lg">
                 Emergency Contacts
               </Button>
@@ -415,6 +416,7 @@ const Home = () => {
         </div>
       </section>
     </div>
+    <EmergencyButton/>
     </>
   );
 };

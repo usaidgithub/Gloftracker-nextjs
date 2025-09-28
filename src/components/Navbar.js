@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useRouter } from "next/router";
 import {
   Mountain,
   Menu,
@@ -45,19 +46,19 @@ const Button = ({ children, className = "", variant = "default", size = "default
     ghost: "hover:bg-accent hover:text-accent-foreground",
     hero: "bg-blue-600 text-white shadow-lg shadow-blue-500/50 hover:bg-blue-700",
   };
-  
+
   // Combine styles
   const combinedClasses = `${baseStyle} ${sizeStyles[size]} ${variantStyles[variant]} ${className}`;
 
   if (size === 'icon') {
-      return (
-        <button
-          className={`${baseStyle} ${sizeStyles.icon} ${variantStyles[variant]} ${className}`}
-          {...props}
-        >
-          {children}
-        </button>
-      );
+    return (
+      <button
+        className={`${baseStyle} ${sizeStyles.icon} ${variantStyles[variant]} ${className}`}
+        {...props}
+      >
+        {children}
+      </button>
+    );
   }
 
   return (
@@ -79,35 +80,51 @@ const NavBar = () => {
   const pathname = usePathname();
 
   const serviceItems = [
-    { name: "Home", href: "/", icon: Home },
+    { name: "Home", href: "/dashboard", icon: Home },
     { name: "Live Dashboard", href: "/dashboard", icon: MapPin },
     { name: "Analytics", href: "/analytics", icon: BarChart3 },
     { name: "Organizations", href: "/organizations", icon: Users },
     { name: "Donations", href: "/donations", icon: Heart },
     { name: "Gov Resources", href: "/government", icon: FileText },
     { name: "Safety Guide", href: "/safety", icon: Shield },
-    { name: "Emergency", href: "/emergency", icon: Phone },
+    { name: "Emergency", href: "/safety", icon: Phone },
   ];
 
   const isActive = (path) => pathname === path;
-  
+
   // Function to close both menus when a main link is clicked
   const handleLinkClick = () => {
-      setIsMenuOpen(false);
-      setIsServicesOpen(false);
+    setIsMenuOpen(false);
+    setIsServicesOpen(false);
   }
-  
+
   // Function to close service dropdown when clicking outside (on the overlay)
   const handleOverlayClick = () => {
-      setIsServicesOpen(false);
+    setIsServicesOpen(false);
   }
+  const router = useRouter();
+  const handleLogout = async () => {
+
+    try {
+      const res = await fetch("/api/logout", { method: "POST" });
+
+      if (res.ok) {
+        // Redirect to login page after successful logout
+        router.push("/");
+      } else {
+        console.error("Logout failed");
+      }
+    } catch (error) {
+      console.error("An error occurred during logout:", error);
+    }
+  };
 
   return (
     <nav className="fixed top-0 w-full bg-card/95 backdrop-blur-md border-b border-border z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link href="/" onClick={handleLinkClick} className="flex items-center space-x-2">
+          <Link href="/dashboard" onClick={handleLinkClick} className="flex items-center space-x-2">
             <div className="p-2 bg-gradient-primary rounded-lg">
               <Mountain className="h-6 w-6 text-primary-foreground" />
             </div>
@@ -145,11 +162,10 @@ const NavBar = () => {
                           onClick={() => setIsServicesOpen(false)}
                         >
                           <div
-                            className={`flex items-center space-x-3 px-4 py-2 hover:bg-accent text-sm ${
-                              isActive(item.href)
+                            className={`flex items-center space-x-3 px-4 py-2 hover:bg-accent text-sm ${isActive(item.href)
                                 ? "bg-accent text-accent-foreground"
                                 : "text-foreground"
-                            }`}
+                              }`}
                           >
                             <Icon className="h-4 w-4" />
                             <span>{item.name}</span>
@@ -163,7 +179,7 @@ const NavBar = () => {
             </div>
 
             {/* Contact Us */}
-            <Link href="/contact" onClick={handleLinkClick}>
+            <Link href="/dashboard" onClick={handleLinkClick}>
               <Button variant="ghost" size="sm" className="flex items-center space-x-2">
                 <Mail className="h-4 w-4" />
                 <span>Contact Us</span>
@@ -171,19 +187,15 @@ const NavBar = () => {
             </Link>
 
             {/* About Us */}
-            <Link href="/about" onClick={handleLinkClick}>
+            <Link href="/dashboard" onClick={handleLinkClick}>
               <Button variant="ghost" size="sm" className="flex items-center space-x-2">
                 <Info className="h-4 w-4" />
                 <span>About Us</span>
               </Button>
             </Link>
-
-            {/* Login */}
-            <Link href="/login" onClick={handleLinkClick}>
-              <Button variant="hero" size="sm">
-                Login
-              </Button>
-            </Link>
+            <Button variant="hero" size="sm" onClick={handleLogout}>
+              Logout
+            </Button>
           </div>
 
           {/* Mobile Menu Button */}
@@ -242,13 +254,12 @@ const NavBar = () => {
               </Link>
             </div>
 
-            {/* Mobile Login */}
+            {/* Mobile Logout*/}
             <div className="border-t border-border pt-2">
-              <Link href="/login" onClick={handleLinkClick}>
-                <Button variant="hero" className="w-full">
-                  Login
+                <Button variant="hero" className="w-full" onClick={handleLogout}>
+                  Logout
                 </Button>
-              </Link>
+            
             </div>
           </div>
         )}

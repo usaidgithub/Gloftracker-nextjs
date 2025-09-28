@@ -1,5 +1,6 @@
 import React from 'react';
 import NavBar from '../components/Navbar';
+import EmergencyButton from '../components/EmergencyButton';
 import { 
   BarChart, 
   Bar, 
@@ -399,6 +400,7 @@ const Analytics = () => {
         </div>
       </div>
     </div>
+    <EmergencyButton/>
     </>
   );
 };
