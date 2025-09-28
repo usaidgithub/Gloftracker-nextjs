@@ -27,9 +27,6 @@ import {
   BarChart3
 } from "lucide-react";
 
-// --- Manually Integrated Components (Card and Badge) ---
-
-// Simplified Card Component
 const Card = ({ className = "", children }) => (
   <div className={`rounded-xl border shadow-sm ${className}`}>
     {children}
@@ -165,7 +162,6 @@ const Analytics = () => {
   return (
     <>
     <NavBar />
-    // Ensured the root container uses min-h-screen and fills its space
     <div className="min-h-screen bg-background pt-20 pb-8 **w-full**"> 
       {/* This is the main layout container. The combination of max-w-7xl and mx-auto 
         correctly centers the content on large screens. On small screens, max-w-7xl 
