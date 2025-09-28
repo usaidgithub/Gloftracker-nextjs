@@ -19,6 +19,7 @@ import {
   Phone,
   Mail,
   Info,
+  MessageSquare
 } from "lucide-react";
 
 // --- START: MANUAL Button Component Integration ---
@@ -81,7 +82,8 @@ const NavBar = () => {
 
   const serviceItems = [
     { name: "Home", href: "/dashboard", icon: Home },
-    { name: "Live Dashboard", href: "/dashboard", icon: MapPin },
+    { name: "Live Map", href: "/map", icon: MapPin },
+    { name: "AI Chat", href: "/chatbot", icon:MessageSquare  },
     { name: "Analytics", href: "/analytics", icon: BarChart3 },
     { name: "Organizations", href: "/organizations", icon: Users },
     { name: "Donations", href: "/donations", icon: Heart },

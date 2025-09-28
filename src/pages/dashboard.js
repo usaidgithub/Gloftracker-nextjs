@@ -120,10 +120,10 @@ const Home = () => {
 
   const services = [
     {
-      title: "Live Dashboard",
+      title: "Live Maps",
       description: "Real-time monitoring of glacier lakes and GLOF risk assessment",
       icon: Monitor,
-      href: "/dashboard",
+      href: "/map",
       color: "primary",
     },
     {
