@@ -132,7 +132,7 @@ const Home = () => {
             const weather = weatherRes.data;
             // 2️⃣ Reverse geocode to get city name
           const geoRes = await axios.get(
-            `http://api.openweathermap.org/geo/1.0/reverse?lat=${lat}&lon=${lon}&limit=1&appid=${weatherAPI}`
+            `https://api.openweathermap.org/geo/1.0/reverse?lat=${lat}&lon=${lon}&limit=1&appid=${weatherAPI}`
           );
           const cityName = geoRes.data[0]?.name || weather.name || "Current Location";
             // Send to Flask API
