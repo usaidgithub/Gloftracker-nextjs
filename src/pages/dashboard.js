@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Navbar from "../components/Navbar"
 import EmergencyButton from "../components/EmergencyButton"
+import axios from 'axios'
 import Link from "next/link";
 import {
   MapPin,
@@ -22,12 +23,14 @@ import {
 } from "lucide-react";
 
 // --- START: Custom UI Components & Utility Styles ---
-const heroImage="./hero-glacier.jpg"
+const heroImage = "./hero-glacier.jpg"
+
 // 1. Custom Button Component
 // NOTE: For Next.js modern API, this component should pass down 'className' to its root element
+
 const Button = ({ children, className = "", variant = "default", size = "default", ...props }) => {
   const baseStyle = "inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2";
-  
+
   // Size styles
   const sizeStyles = {
     default: "h-10 px-4 py-2 text-sm",
@@ -107,9 +110,66 @@ const mockLocationData = {
 };
 
 const Home = () => {
-  const [locationData, setLocationData] = useState(mockLocationData);
+  const [locationData, setLocationData] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Get user location
+        console.log("Getting user location")
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(async (pos) => {
+            const lat = pos.coords.latitude;
+            const lon = pos.coords.longitude;
+            const weatherAPI = process.env.NEXT_PUBLIC_OPENWEATHER_KEY
+            // Example weather data (replace with OpenWeather API call if needed)
+            const weatherRes = await axios.get(
+              `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${weatherAPI}&units=metric`
+            );
+
+            const weather = weatherRes.data;
+            // 2️⃣ Reverse geocode to get city name
+          const geoRes = await axios.get(
+            `http://api.openweathermap.org/geo/1.0/reverse?lat=${lat}&lon=${lon}&limit=1&appid=${weatherAPI}`
+          );
+          const cityName = geoRes.data[0]?.name || weather.name || "Current Location";
+            // Send to Flask API
+            const response = await axios.post("https://glof-tracker.onrender.com/api/glof-prediction", {
+              latitude: lat,
+              longitude: lon,
+              temperature: weather.main.temp,
+              precipitation: weather.rain ? weather.rain["1h"] || 0 : 0,
+              humidity: weather.main.humidity,
+              wind_speed: weather.wind.speed,
+              pressure: weather.main.pressure,
+            });
+
+            const risk = response.data.glof_risk === 1 ? "high" : "safe";
+            const riskZone=risk
+            const monitoringIndex = Math.round(weather.clouds.all / 20) + Math.round(weather.wind.speed / 5); 
+            setLocationData({
+              name:cityName,
+              temperature: `${weather.main.temp}°C`,
+              weather: weather.weather[0].description,
+              humidity: `${weather.main.humidity}%`,
+              windSpeed: `${weather.wind.speed} m/s`,
+              riskLevel: risk,
+              lastUpdated: new Date().toLocaleTimeString(),
+              zoneStatus: riskZone, // you can later get this from backend
+              alertLevel: monitoringIndex, // or keep static
+            });
+            setLoading(false);
+          });
+        }
+      } catch (err) {
+        console.error("Error fetching data:", err);
+      }
+    };
+
+    fetchData();
+  }, []);
   // Effect to update the time display
   useEffect(() => {
     const timer = setInterval(() => {
@@ -198,225 +258,245 @@ const Home = () => {
 
   return (
     <>
-    <Navbar/>
-    <div className="min-h-screen bg-gray-900 text-white">
-      {/* Hero Section */}
-      <section className="relative h-screen flex items-center justify-center overflow-hidden">
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: `url(${heroImage})` }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-b from-gray-900/20 via-gray-900/60 to-gray-900" />
-        </div>
-
-        <div className="relative z-10 text-center max-w-4xl mx-auto px-4">
-          <div className="mb-6">
-            <Badge variant="secondary" className="text-sm px-4 py-2 mb-4">
-              <Activity className="h-4 w-4 mr-2" />
-              Live Monitoring Active
-            </Badge>
+      <Navbar />
+      <div className="min-h-screen bg-gray-900 text-white">
+        {/* Hero Section */}
+        <section className="relative h-screen flex items-center justify-center overflow-hidden">
+          <div
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style={{ backgroundImage: `url(${heroImage})` }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-b from-gray-900/20 via-gray-900/60 to-gray-900" />
           </div>
 
-          <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
-            GLOF Early Warning
-            <span className="block text-4xl md:text-6xl text-blue-500">
-              Protection System
-            </span>
-          </h1>
-
-          <p className="text-xl md:text-2xl text-gray-400 mb-8 max-w-2xl mx-auto">
-            Advanced glacier lake monitoring and emergency response system protecting communities from outburst floods
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            {/* 1. FIX: Modern Link API - wrap the custom component */}
-            <Link href="/dashboard" className="min-w-[200px]">
-              <Button variant="hero" size="xl">
-                <Monitor className="h-5 w-5 mr-2" />
-                Live Dashboard
-              </Button>
-            </Link>
-            {/* 2. FIX: Modern Link API - wrap the custom component */}
-            <Link href="/safety" className="min-w-[200px]">
-              <Button variant="glass" size="xl">
-                <BookOpen className="h-5 w-5 mr-2" />
-                Emergency Guide
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
-      
-      {/* --- */}
-
-      {/* Real-time Status Panel */}
-      <section className="py-8 bg-gray-800/50">
-        <div className="max-w-7xl mx-auto px-4">
-          <Card className="p-6 bg-gray-800/80 border-gray-700">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-white flex items-center">
-                <MapPin className="h-5 w-5 mr-2 text-blue-500" />
-                Current Location Status
-              </h3>
-              <Badge
-                variant="secondary"
-                className={`${
-                  locationData.riskLevel === 'safe' 
-                    ? 'bg-green-500 text-white' 
-                    : locationData.riskLevel === 'high' 
-                    ? 'bg-red-500 text-white' 
-                    : 'bg-yellow-500 text-gray-900'
-                }`}
-              >
-                {locationData.riskLevel.toUpperCase()} RISK
+          <div className="relative z-10 text-center max-w-4xl mx-auto px-4">
+            <div className="mb-6">
+              <Badge variant="secondary" className="text-sm px-4 py-2 mb-4">
+                <Activity className="h-4 w-4 mr-2" />
+                Live Monitoring Active
               </Badge>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              <div className="text-center">
-                <MapPin className="h-6 w-6 text-blue-500 mx-auto mb-2" />
-                <p className="text-sm text-gray-400">Location</p>
-                <p className="font-semibold text-white">{locationData.name}</p>
-              </div>
-              <div className="text-center">
-                <Thermometer className="h-6 w-6 text-blue-500 mx-auto mb-2" />
-                <p className="text-sm text-gray-400">Temperature</p>
-                <p className="font-semibold text-white">{locationData.temperature}</p>
-              </div>
-              <div className="text-center">
-                <Cloud className="h-6 w-6 text-blue-500 mx-auto mb-2" />
-                <p className="text-sm text-gray-400">Weather</p>
-                <p className="font-semibold text-white">{locationData.weather}</p>
-              </div>
-              <div className="text-center">
-                <Activity className="h-6 w-6 text-blue-500 mx-auto mb-2" />
-                <p className="text-sm text-gray-400">Glacier Lakes</p>
-                <p className="font-semibold text-white">{locationData.glacierLakes}</p>
-              </div>
-              <div className="text-center">
-                <Monitor className="h-6 w-6 text-blue-500 mx-auto mb-2" />
-                <p className="text-sm text-gray-400">Stations</p>
-                <p className="font-semibold text-white">{locationData.monitoringStations}</p>
-              </div>
-              <div className="text-center">
-                <Bell className="h-6 w-6 text-blue-500 mx-auto mb-2" />
-                <p className="text-sm text-gray-400">Last Update</p>
-                <p className="font-semibold text-white" suppressHydrationWarning={true} >{locationData.lastUpdated}</p>
-              </div>
-            </div>
-          </Card>
-        </div>
-      </section>
-      
-      {/* --- */}
+            <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
+              GLOF Early Warning
+              <span className="block text-4xl md:text-6xl text-blue-500">
+                Protection System
+              </span>
+            </h1>
 
-      {/* Services Overview */}
-      <section className="py-16">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              Comprehensive GLOF Protection Services
-            </h2>
-            <p className="text-lg text-gray-400 max-w-2xl mx-auto">
-              Advanced monitoring, emergency response, and community support systems
+            <p className="text-xl md:text-2xl text-gray-400 mb-8 max-w-2xl mx-auto">
+              Advanced glacier lake monitoring and emergency response system protecting communities from outburst floods
             </p>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {services.map((service, index) => {
-              const Icon = service.icon;
-              return (
-                <Card
-                  key={index}
-                  className="p-6 bg-gray-800 border-gray-700 hover:shadow-xl transition-all duration-300 group cursor-pointer"
-                >
-                  {/* 3. 🔴 CRITICAL FIX: The Link must have ONE child. We wrap the existing two children in a single <div> */}
-                  <Link href={service.href} className="block h-full">
-                    <div>
-                      {/* Original first child (flex div) */}
-                      <div className="flex items-center mb-4">
-                        <div className="p-3 bg-blue-500/10 rounded-lg mr-4 group-hover:bg-blue-500/20 transition-colors">
-                          <Icon className="h-6 w-6 text-blue-500" />
-                        </div>
-                        <h3 className="text-xl font-semibold text-white group-hover:text-blue-500 transition-colors">
-                          {service.title}
-                        </h3>
-                      </div>
-                      {/* Original second child (p) */}
-                      <p className="text-gray-400 leading-relaxed">
-                        {service.description}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              {/* 1. FIX: Modern Link API - wrap the custom component */}
+              <Link href="/dashboard" className="min-w-[200px]">
+                <Button variant="hero" size="xl">
+                  <Monitor className="h-5 w-5 mr-2" />
+                  Live Dashboard
+                </Button>
+              </Link>
+              {/* 2. FIX: Modern Link API - wrap the custom component */}
+              <Link href="/safety" className="min-w-[200px]">
+                <Button variant="glass" size="xl">
+                  <BookOpen className="h-5 w-5 mr-2" />
+                  Emergency Guide
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* --- */}
+
+        {/* Real-time Status Panel */}
+        {loading ? (
+          // Loading Skeleton
+          <section className="py-8 bg-gray-800/50">
+            <div className="max-w-7xl mx-auto px-4">
+              <Card className="p-6 bg-gray-800/80 border-gray-700 flex flex-col items-center justify-center text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+                <p className="text-gray-400 text-lg">Loading live location data...</p>
+              </Card>
+            </div>
+          </section>
+        ) : (
+          locationData && (
+            <section className="py-8 bg-gray-800/50">
+              <div className="max-w-7xl mx-auto px-4">
+                <Card className="p-6 bg-gray-800/80 border-gray-700">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-white flex items-center">
+                      <MapPin className="h-5 w-5 mr-2 text-blue-500" />
+                      Current Location Status
+                    </h3>
+                    <Badge
+                      variant="secondary"
+                      className={`${locationData.riskLevel === "safe"
+                          ? "bg-green-500 text-white"
+                          : locationData.riskLevel === "high"
+                            ? "bg-red-500 text-white"
+                            : "bg-yellow-500 text-gray-900"
+                        }`}
+                    >
+                      {locationData.riskLevel.toUpperCase()} RISK
+                    </Badge>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                    <div className="text-center">
+                      <MapPin className="h-6 w-6 text-blue-500 mx-auto mb-2" />
+                      <p className="text-sm text-gray-400">Location</p>
+                      <p className="font-semibold text-white">{locationData.name}</p>
+                    </div>
+                    <div className="text-center">
+                      <Thermometer className="h-6 w-6 text-blue-500 mx-auto mb-2" />
+                      <p className="text-sm text-gray-400">Temperature</p>
+                      <p className="font-semibold text-white">{locationData.temperature}</p>
+                    </div>
+                    <div className="text-center">
+                      <Cloud className="h-6 w-6 text-blue-500 mx-auto mb-2" />
+                      <p className="text-sm text-gray-400">Weather</p>
+                      <p className="font-semibold text-white">{locationData.weather}</p>
+                    </div>
+                    <div className="text-center">
+                      <Activity className="h-6 w-6 text-blue-500 mx-auto mb-2" />
+                      <p className="text-sm text-gray-400">Zone Status</p>
+                      <p className="font-semibold text-white">{locationData.zoneStatus}</p>
+                    </div>
+                    <div className="text-center">
+                      <Monitor className="h-6 w-6 text-blue-500 mx-auto mb-2" />
+                      <p className="text-sm text-gray-400">Environmental Alert Level</p>
+                      <p className="font-semibold text-white">{locationData.alertLevel}</p>
+                    </div>
+                    <div className="text-center">
+                      <Bell className="h-6 w-6 text-blue-500 mx-auto mb-2" />
+                      <p className="text-sm text-gray-400">Last Update</p>
+                      <p
+                        className="font-semibold text-white"
+                        suppressHydrationWarning={true}
+                      >
+                        {locationData.lastUpdated}
                       </p>
                     </div>
-                  </Link>
+                  </div>
                 </Card>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-      
-      {/* --- */}
+              </div>
+            </section>
+          )
+        )}
 
-      {/* Additional Features (No Link changes needed here) */}
-      <section className="py-16 bg-gray-800/30">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-12">
+
+
+        {/* --- */}
+
+        {/* Services Overview */}
+        <section className="py-16">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+                Comprehensive GLOF Protection Services
+              </h2>
+              <p className="text-lg text-gray-400 max-w-2xl mx-auto">
+                Advanced monitoring, emergency response, and community support systems
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {services.map((service, index) => {
+                const Icon = service.icon;
+                return (
+                  <Card
+                    key={index}
+                    className="p-6 bg-gray-800 border-gray-700 hover:shadow-xl transition-all duration-300 group cursor-pointer"
+                  >
+                    {/* 3. 🔴 CRITICAL FIX: The Link must have ONE child. We wrap the existing two children in a single <div> */}
+                    <Link href={service.href} className="block h-full">
+                      <div>
+                        {/* Original first child (flex div) */}
+                        <div className="flex items-center mb-4">
+                          <div className="p-3 bg-blue-500/10 rounded-lg mr-4 group-hover:bg-blue-500/20 transition-colors">
+                            <Icon className="h-6 w-6 text-blue-500" />
+                          </div>
+                          <h3 className="text-xl font-semibold text-white group-hover:text-blue-500 transition-colors">
+                            {service.title}
+                          </h3>
+                        </div>
+                        {/* Original second child (p) */}
+                        <p className="text-gray-400 leading-relaxed">
+                          {service.description}
+                        </p>
+                      </div>
+                    </Link>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* --- */}
+
+        {/* Additional Features (No Link changes needed here) */}
+        <section className="py-16 bg-gray-800/30">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold text-white mb-4">
+                Advanced Protection Features
+              </h2>
+              <p className="text-lg text-gray-400">
+                Cutting-edge technology for glacier monitoring and disaster prevention
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {additionalFeatures.map((feature, index) => {
+                const Icon = feature.icon;
+                return (
+                  <div key={index} className="flex items-start space-x-4 p-4">
+                    <div className="p-2 bg-blue-500/10 rounded-lg flex-shrink-0">
+                      <Icon className="h-5 w-5 text-blue-500" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-white mb-2">{feature.title}</h4>
+                      <p className="text-sm text-gray-400">{feature.description}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* --- */}
+
+        {/* Call to Action */}
+        <section className="py-16">
+          <div className="max-w-4xl mx-auto text-center px-4">
             <h2 className="text-3xl font-bold text-white mb-4">
-              Advanced Protection Features
+              Ready to Stay Protected?
             </h2>
-            <p className="text-lg text-gray-400">
-              Cutting-edge technology for glacier monitoring and disaster prevention
+            <p className="text-lg text-gray-400 mb-8">
+              Join our monitoring network and receive real-time glacier lake alerts
             </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              {/* 4. FIX: Modern Link API - wrap the custom component */}
+              <Link href="/dashboard" className="w-full sm:w-auto">
+                <Button variant="hero" size="lg">
+                  Start Monitoring
+                </Button>
+              </Link>
+              {/* 5. FIX: Modern Link API - wrap the custom component */}
+              <Link href="/safety" className="w-full sm:w-auto">
+                <Button variant="emergency" size="lg">
+                  Emergency Contacts
+                </Button>
+              </Link>
+            </div>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {additionalFeatures.map((feature, index) => {
-              const Icon = feature.icon;
-              return (
-                <div key={index} className="flex items-start space-x-4 p-4">
-                  <div className="p-2 bg-blue-500/10 rounded-lg flex-shrink-0">
-                    <Icon className="h-5 w-5 text-blue-500" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-white mb-2">{feature.title}</h4>
-                    <p className="text-sm text-gray-400">{feature.description}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-      
-      {/* --- */}
-
-      {/* Call to Action */}
-      <section className="py-16">
-        <div className="max-w-4xl mx-auto text-center px-4">
-          <h2 className="text-3xl font-bold text-white mb-4">
-            Ready to Stay Protected?
-          </h2>
-          <p className="text-lg text-gray-400 mb-8">
-            Join our monitoring network and receive real-time glacier lake alerts
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            {/* 4. FIX: Modern Link API - wrap the custom component */}
-            <Link href="/dashboard" className="w-full sm:w-auto">
-              <Button variant="hero" size="lg">
-                Start Monitoring
-              </Button>
-            </Link>
-            {/* 5. FIX: Modern Link API - wrap the custom component */}
-            <Link href="/safety" className="w-full sm:w-auto">
-              <Button variant="emergency" size="lg">
-                Emergency Contacts
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
-    </div>
-    <EmergencyButton/>
+        </section>
+      </div>
+      <EmergencyButton />
     </>
   );
 };
